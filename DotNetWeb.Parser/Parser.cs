@@ -20,8 +20,12 @@ namespace DotNetWeb.Parser
 
         private void Program()
         {
-            Init();
-            Template();
+            if (this.lookAhead.TokenType == TokenType.OpenBracket) { 
+                Init();
+            } else if (this.lookAhead.TokenType == TokenType.LessThan)
+            {
+                InnerTemplate();
+            }
         }
 
         private void Template()
@@ -32,10 +36,7 @@ namespace DotNetWeb.Parser
         
         private void InnerTemplate()
         {
-            if (this.lookAhead.TokenType == TokenType.LessThan)
-            {
-                Template();
-            }
+            Template();
         }
         private void Tag()
         {
@@ -198,35 +199,33 @@ namespace DotNetWeb.Parser
 
         private void Init()
         {
-            Match(TokenType.OpenBrace);
-            Match(TokenType.Percentage);
-            Match(TokenType.InitKeyword);
-            Code();
-            Match(TokenType.Percentage);
-            Match(TokenType.CloseBrace);
+            if (!ValidateSemantic("block")) {
+                throw new ApplicationException($"Semantic error in Init Block!");
+            }
         }
 
         private void Code()
         {
-            Decls();
-            Assignations();
+            if (!ValidateSemantic("code"))
+            {
+                throw new ApplicationException($"Semantic error in Code block!");
+            }
         }
 
         private void Assignations()
         {
-            if (this.lookAhead.TokenType == TokenType.Identifier)
+            if (!ValidateSemantic("assignations"))
             {
-                Assignation();
-                Assignations();
+                throw new ApplicationException($"Semantic error in Assignations block!");
             }
         }
 
         private void Assignation()
         {
-            Match(TokenType.Identifier);
-            Match(TokenType.Assignation);
-            Eq();
-            Match(TokenType.SemiColon);
+            if (!ValidateSemantic("assignation"))
+            {
+                throw new ApplicationException($"Semantic error in Assignation block!");
+            }
         }
 
         private void Decls()
@@ -305,6 +304,62 @@ namespace DotNetWeb.Parser
                 this.lookAhead.TokenType == TokenType.FloatListKeyword ||
                 this.lookAhead.TokenType == TokenType.StringListKeyword;
 
+        }
+
+        public bool ValidateSemantic(string type)
+        {
+            switch (type) {
+                case "block":
+                    try
+                    {
+                        Match(TokenType.OpenBrace);
+                        Match(TokenType.Percentage);
+                        Match(TokenType.InitKeyword);
+                        Code();
+                        Match(TokenType.Percentage);
+                        Match(TokenType.CloseBrace);
+                        return true;
+                    } catch (Exception ex)
+                    {
+                        return false;
+                    }
+                case "code":
+                    try
+                    {
+                        Decls();
+                        Assignations();
+                        return true;
+                    } catch (Exception ex)
+                    {
+                        return false;
+                    }
+                case "assignations":
+                    try
+                    {
+                        if (this.lookAhead.TokenType == TokenType.Identifier)
+                        {
+                            Assignation();
+                            Assignations();
+                        }
+                        return true;
+                    } catch (Exception ex)
+                    {
+                        return false;
+                    }
+                case "assignation":
+                    try
+                    {
+                        Match(TokenType.Identifier);
+                        Match(TokenType.Assignation);
+                        Eq();
+                        Match(TokenType.SemiColon);
+                        return true;
+                    } catch (Exception ex)
+                    {
+                        return false;
+                    }
+            }
+            return false;
         }
     }
 }
