@@ -15,12 +15,6 @@ namespace DotNetWeb.Parser
         }
         public void Parse()
         {
-            return Program();
-        }
-
-        private Statement Program()
-        {
-            throw new NotImplementedException();
         }
 
         private void Move()
